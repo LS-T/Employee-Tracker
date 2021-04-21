@@ -1,4 +1,4 @@
-// Dependencies 
+// Dependencies
 const mysql = require("mysql");
 const inquirer = require("inquirer");
 require("dotenv").config();
@@ -13,7 +13,7 @@ const connection = mysql.createConnection({
   database: process.env.DB_NAME,
 });
 
-// start function to ask the user what they would like to do next?
+// start function to ask the user what they would like to do next? switch case used to direct to a specific method
 const start = () => {
   inquirer
     .prompt({
@@ -39,11 +39,21 @@ const start = () => {
         case "View departments":
           viewDepartments();
           break;
+        case "View roles":
+          viewRoles();
+          break;
+        case "Add a new employee":
+          addNewEmployee();
+          break;
+
         case "Add a new department":
           addDepartment();
           break;
         case "Update employee roles":
           updateEmployeeRole();
+          break;
+        case "Add a new role":
+          addNewRole();
           break;
         case "exit":
           connection.end();
@@ -55,7 +65,7 @@ const start = () => {
     });
 };
 
-// function to view list of  current employees
+// method to view list of  current employees
 const viewEmployees = () => {
   connection.query("SELECT * FROM employee", (err, res) => {
     if (err) throw err;
@@ -69,7 +79,7 @@ const viewEmployees = () => {
     start();
   });
 };
-// function to view list of current departments 
+// method to view list of current departments
 const viewDepartments = () => {
   connection.query("SELECT * FROM departments", (err, res) => {
     if (err) throw err;
@@ -80,8 +90,18 @@ const viewDepartments = () => {
     start();
   });
 };
-
-// function to add department to the table departments 
+// method to view roles
+const viewRoles = () => {
+  connection.query("SELECT * FROM role", (err, res) => {
+    if (err) throw err;
+    // map through results and pull role information from database
+    res.map((role) => {
+      console.log(role.title, role.salary);
+    });
+    start();
+  });
+};
+// method to add department to the table departments
 const addDepartment = () => {
   inquirer
     .prompt([
@@ -112,7 +132,86 @@ const addDepartment = () => {
     });
 };
 
-// function to update employee role to a new role 
+// method to add new role
+const addNewRole = () => {
+  inquirer
+    .prompt([
+      {
+        name: "title",
+        type: "input",
+        message: "What would you like the new role to be called?",
+      },
+      {
+        name: "salary",
+        type: "input",
+        message: "What would you like the salary to be?",
+      },
+      {
+        name: "departmentID",
+        type: "input",
+        message: "What would you like the department ID to be?",
+      },
+      {
+        name: "newId",
+        type: "input",
+        message: "What would you like the new reference ID to be?",
+      },
+    ])
+    .then((answer) => {
+      connection.query(
+        "INSERT INTO role SET ?",
+        {
+          title: answer.title,
+          salary: answer.salary,
+          department_id: answer.departmentID,
+          id: answer.newId,
+        },
+        (err) => {
+          if (err) throw err;
+          console.log("success");
+        }
+      );
+      start();
+    });
+};
+// method used when adding a new employee
+const addNewEmployee = () => {
+  inquirer
+    .prompt([
+      {
+        name: "firstName",
+        type: "input",
+        message: "What is the first name of the new employee?",
+      },
+      {
+        name: "lastName",
+        type: "input",
+        message: "What is the last name of the new employee?",
+      },
+      {
+        name: "employeeID",
+        type: "input",
+        message: "What is the employee ID for the new employee?",
+      },
+    ])
+    .then((answer) => {
+      connection.query(
+        "INSERT INTO employee SET ?",
+        {
+          first_name: answer.firstName,
+          last_name: answer.lastName,
+          id: answer.employeeID,
+        },
+        (err) => {
+          if (err) throw err;
+          console.log("success");
+        }
+      );
+      start();
+    });
+};
+
+// function to update employee role to a new role
 const updateEmployeeRole = () => {
   connection.query("SELECT * FROM employee", (err, res) => {
     if (err) throw err;
@@ -133,7 +232,7 @@ const updateEmployeeRole = () => {
       .then((answer) => {
         connection.query("SELECT * FROM role", (err, res) => {
           if (err) throw err;
-            //  set variable roleData to hold mapped results
+          //  set variable roleData to hold mapped results
           let roleData = res.map((role) => {
             return {
               name: role.title,
@@ -153,9 +252,10 @@ const updateEmployeeRole = () => {
                 [answer2.whichRole, answer.employeeID],
                 (err, res) => {
                   if (err) throw err;
-                  console.log(res);
+                  return res;
                 }
               );
+              start();
             });
         });
       });
